@@ -1,6 +1,6 @@
 """Constants for Zephyr Connect integration."""
 
-DOMAIN = "zephyr_connect"
+DOMAIN = "zephyrconnect"
 
 # ── Cognito app credentials ───────────────────────────────────────────────────
 # These were extracted from Zephyr Connect APK v1.1.16 (awsconfiguration.json).
