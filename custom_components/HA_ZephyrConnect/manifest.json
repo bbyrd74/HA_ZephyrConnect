@@ -1,8 +1,8 @@
 {
-  "domain": "zephyr_connect",
+  "domain": "HA_ZephyrConnect",
   "name": "Zephyr Connect",
   "version": "1.0.0",
-  "documentation": "https://github.com/bbyrd74/zephyr_connect",
+  "documentation": "https://github.com/bbyrd74/HA_ZephyrConnect/README.md",
   "requirements": [
     "pycognito>=0.4.0",
     "boto3>=1.26.0",
