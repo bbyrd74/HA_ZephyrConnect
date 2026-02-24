@@ -1,0 +1,33 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zephyr Connect Login",
+        "description": "Enter your Zephyr Connect app credentials",
+        "data": {
+          "username": "Email address",
+          "password": "Password"
+        }
+      },
+      "select_device": {
+        "title": "Select Hood",
+        "description": "Choose which range hood to add",
+        "data": {
+          "thing_name": "Device"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Incorrect password",
+      "user_not_found": "No Zephyr account found for this email address",
+      "no_devices": "No hoods found on this account",
+      "cannot_connect": "Cannot reach Zephyr servers — check your network",
+      "stale_client_credentials": "The integration's internal credentials are outdated (extracted from APK v{apk_version}). Zephyr may have released a new app version. Please file an issue at the integration repository so the maintainer can update them.",
+      "unknown": "Unexpected authentication error — check the logs"
+    },
+    "abort": {
+      "already_configured": "This hood is already configured",
+      "no_devices": "No hoods found on this account"
+    }
+  }
+}

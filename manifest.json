@@ -1,0 +1,15 @@
+{
+  "domain": "zephyr_connect",
+  "name": "Zephyr Connect",
+  "version": "1.0.0",
+  "documentation": "https://github.com/bbyrd74/zephyr_connect",
+  "requirements": [
+    "pycognito>=0.4.0",
+    "boto3>=1.26.0",
+    "awsiotsdk>=1.11.0"
+  ],
+  "dependencies": [],
+  "codeowners": [],
+  "iot_class": "cloud_push",
+  "config_flow": true
+}
