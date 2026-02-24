@@ -1,5 +1,5 @@
 {
-  "domain": "HA_ZephyrConnect",
+  "domain": "zephyr",
   "name": "Zephyr Connect",
   "version": "1.0.0",
   "documentation": "https://github.com/bbyrd74/HA_ZephyrConnect/README.md",
@@ -9,7 +9,12 @@
     "awsiotsdk>=1.11.0"
   ],
   "dependencies": [],
-  "codeowners": [],
+  "codeowners": [
+    "@bbyrd74"
+  ],
   "iot_class": "cloud_push",
-  "config_flow": true
+  "config_flow": true,
+  "loggers": [
+    "custom_components.zephyr"
+  ]
 }

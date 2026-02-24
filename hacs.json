@@ -1,4 +1,10 @@
 {
-  "name": "Home Assistant HACS Integration for Zephyr Connect",
-  "content_in_root": false
+  "name": "Zephyr Connect",
+  "content_in_root": false,
+  "render_readme": true,
+  "domains": [
+    "zephyr"
+  ],
+  "homeassistant": "2023.5.0",
+  "country": "US"
 }
