@@ -2,6 +2,10 @@
 
 Speed 0 = off, 1–maxFanSpeed = on (AK9434BS: max = 6).
 HA percentage maps linearly to the device integer range.
+
+Uses optimistic state updates — we write the new state locally immediately
+on command so the UI stays in sync, rather than waiting for the shadow
+echo which can carry stale values and cause the control to flap back.
 """
 from __future__ import annotations
 
@@ -34,7 +38,12 @@ async def async_setup_entry(
 class ZephyrFan(CoordinatorEntity, FanEntity):
     _attr_has_entity_name = True
     _attr_name = "Fan"
-    _attr_supported_features = FanEntityFeature.SET_SPEED
+    # Explicitly declare all supported features — required in HA 2024+
+    _attr_supported_features = (
+        FanEntityFeature.SET_SPEED
+        | FanEntityFeature.TURN_ON
+        | FanEntityFeature.TURN_OFF
+    )
 
     def __init__(self, coordinator, mqtt, thing_name, max_speed, model_name, serial):
         super().__init__(coordinator)
@@ -48,8 +57,13 @@ class ZephyrFan(CoordinatorEntity, FanEntity):
             "model": model_name,
             "serial_number": serial,
         }
+        # Optimistic state — tracks what we commanded locally so the UI
+        # does not flap while waiting for the device shadow echo
+        self._optimistic_speed: int | None = None
 
     def _val(self) -> int:
+        if self._optimistic_speed is not None:
+            return self._optimistic_speed
         return (self.coordinator.data or {}).get(KEY_FAN, 0)
 
     @property
@@ -68,18 +82,28 @@ class ZephyrFan(CoordinatorEntity, FanEntity):
     def extra_state_attributes(self) -> dict:
         return {"speed_level": self._val(), "max_speed": self._max_speed}
 
-    async def _send(self, value: int) -> None:
+    def _handle_coordinator_update(self) -> None:
+        """Clear optimistic state on real device update, then refresh UI."""
+        self._optimistic_speed = None
+        super()._handle_coordinator_update()
+
+    async def _send(self, speed: int) -> None:
+        # Reflect change in UI immediately
+        self._optimistic_speed = speed
+        self.async_write_ha_state()
         try:
-            await self.hass.async_add_executor_job(self._mqtt.publish_command, KEY_FAN, value)
-        except ZephyrStaleClientCredsError:
-            _LOGGER.error("Cannot control fan — Zephyr app credentials need updating")
-        except ZephyrMQTTError as exc:
+            await self.hass.async_add_executor_job(
+                self._mqtt.publish_command, KEY_FAN, speed
+            )
+        except (ZephyrStaleClientCredsError, ZephyrMQTTError) as exc:
             _LOGGER.error("Fan command failed: %s", exc)
+            self._optimistic_speed = None
+            self.async_write_ha_state()
 
     async def async_set_percentage(self, percentage: int) -> None:
         await self._send(round((percentage / 100) * self._max_speed))
 
-    async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
+    async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs: Any) -> None:
         speed = max(1, round((percentage / 100) * self._max_speed)) if percentage else 1
         await self._send(speed)
 
