@@ -251,6 +251,13 @@ class ZephyrRestClient:
     def __init__(self, zauth: ZephyrAuth) -> None:
         self._auth = zauth
         self._session = requests.Session()
+        # The Gemteks backend cert is missing a Subject Key Identifier extension
+        # which Python's SSL stack rejects but browsers/mobile apps accept.
+        # We disable verification for this host only — Cognito/AWS calls are unaffected.
+        self._session.verify = False
+        # Suppress the resulting InsecureRequestWarning from urllib3
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def _headers(self) -> dict:
         return {"Authorization": self._auth.id_token, "Content-Type": "application/json"}

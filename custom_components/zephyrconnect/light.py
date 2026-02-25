@@ -2,6 +2,8 @@
 
 Level 0 = off, 1–maxLightLevel = on (AK9434BS: max = 3).
 HA brightness (0–255) maps to device level (0–maxLightLevel).
+
+Uses optimistic state updates — same reasoning as fan.py.
 """
 from __future__ import annotations
 
@@ -49,8 +51,11 @@ class ZephyrLight(CoordinatorEntity, LightEntity):
             "model": model_name,
             "serial_number": serial,
         }
+        self._optimistic_level: int | None = None
 
     def _val(self) -> int:
+        if self._optimistic_level is not None:
+            return self._optimistic_level
         return (self.coordinator.data or {}).get(KEY_LIGHT, 0)
 
     @property
@@ -65,13 +70,22 @@ class ZephyrLight(CoordinatorEntity, LightEntity):
     def extra_state_attributes(self) -> dict:
         return {"light_level": self._val(), "max_level": self._max_level}
 
-    async def _send(self, value: int) -> None:
+    def _handle_coordinator_update(self) -> None:
+        """Clear optimistic state on real device update, then refresh UI."""
+        self._optimistic_level = None
+        super()._handle_coordinator_update()
+
+    async def _send(self, level: int) -> None:
+        self._optimistic_level = level
+        self.async_write_ha_state()
         try:
-            await self.hass.async_add_executor_job(self._mqtt.publish_command, KEY_LIGHT, value)
-        except ZephyrStaleClientCredsError:
-            _LOGGER.error("Cannot control light — Zephyr app credentials need updating")
-        except ZephyrMQTTError as exc:
+            await self.hass.async_add_executor_job(
+                self._mqtt.publish_command, KEY_LIGHT, level
+            )
+        except (ZephyrStaleClientCredsError, ZephyrMQTTError) as exc:
             _LOGGER.error("Light command failed: %s", exc)
+            self._optimistic_level = None
+            self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         if ATTR_BRIGHTNESS in kwargs:
