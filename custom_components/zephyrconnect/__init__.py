@@ -76,7 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         device_info = {}
 
     # ── MQTT ──────────────────────────────────────────────────────────────────
-    mqtt_client = ZephyrMQTTClient(zauth, thing_name)
+    mqtt_client = ZephyrMQTTClient(zauth, thing_name, loop=hass.loop)
     try:
         await hass.async_add_executor_job(mqtt_client.connect)
     except ZephyrMQTTError as exc:
@@ -158,5 +158,5 @@ class ZephyrCoordinator(DataUpdateCoordinator):
         return state
 
     def handle_mqtt_update(self, state: dict) -> None:
-        """Called by MQTT client on every shadow update — immediately pushes to HA."""
+        """Called via call_soon_threadsafe — runs on the HA event loop, safe to call HA methods."""
         self.async_set_updated_data(state)

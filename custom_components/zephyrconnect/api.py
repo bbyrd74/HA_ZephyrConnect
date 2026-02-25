@@ -327,7 +327,7 @@ class ZephyrMQTTClient:
     Light range: 0–maxLightLevel (device-specific, AK9434BS = 0–3)
     """
 
-    def __init__(self, zauth: ZephyrAuth, thing_name: str) -> None:
+    def __init__(self, zauth: ZephyrAuth, thing_name: str, loop=None) -> None:
         self._auth = zauth
         self._thing_name = thing_name
         self._connection = None
@@ -335,6 +335,7 @@ class ZephyrMQTTClient:
         self._state_lock = threading.Lock()
         self._connected = False
         self._state_callbacks: list[Callable[[dict], None]] = []
+        self._loop = loop  # HA event loop — callbacks must be scheduled onto it
 
         self._topic_get          = TOPIC_GET.format(thing=thing_name)
         self._topic_get_accepted = TOPIC_GET_ACCEPTED.format(thing=thing_name)
@@ -422,12 +423,22 @@ class ZephyrMQTTClient:
     # ── Internal ──────────────────────────────────────────────────────────────
 
     def _notify(self) -> None:
+        """Schedule state callbacks onto the HA event loop.
+
+        MQTT messages arrive on the awsiotsdk network thread — we must never
+        call async_write_ha_state or coordinator methods directly from here.
+        call_soon_threadsafe safely hands off to the event loop thread.
+        """
         state = self.get_state()
         for cb in self._state_callbacks:
-            try:
-                cb(state)
-            except Exception as exc:
-                _LOGGER.error("State callback error: %s", exc)
+            if self._loop is not None:
+                self._loop.call_soon_threadsafe(cb, state)
+            else:
+                # Fallback if no loop provided (e.g. during testing)
+                try:
+                    cb(state)
+                except Exception as exc:
+                    _LOGGER.error("State callback error: %s", exc)
 
     def _on_message(self, topic, payload, dup, qos, retain, **kwargs):
         try:

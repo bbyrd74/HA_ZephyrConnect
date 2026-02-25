@@ -1,0 +1,4 @@
+pycognito
+boto3
+awsiotsdk
+requests
