@@ -32,7 +32,7 @@ from .exceptions import (
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.FAN, Platform.LIGHT, Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS = [Platform.FAN, Platform.LIGHT, Platform.BINARY_SENSOR, Platform.SENSOR, Platform.NUMBER]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
